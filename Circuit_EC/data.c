@@ -462,56 +462,97 @@ vector parse_row(char* row_str, int cols) {                                     
 }
 
 circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, matrix m, vector row) {   // gets the matrices
-    int num_order = 0;                                                                  // number of matrices in the order
-    while (order[num_order] != NULL) {                                                  // counts the number of matrices in the order
-        num_order++;                                                                    // increases the counter
+    int num_order = 0;                                                                  // number of matrices
+    while (order[num_order] != NULL) {                                                  // counts the matrices
+        num_order++;                                                                    // increments nem_order
     }
-    all_circ.cir = malloc(num_order * sizeof(matrix));                                  // allocates memory for the circuit
-    all_circ.n = num_order;                                                             // sets the number of matrices in the circuit
-    char* lines_copy = strdup(lines);                                                   // creates a copy of the lines string
-    char* ptr_lines = NULL;                                                             // pointer for strtok_r
-    char* line = strtok_r(lines_copy, "\n", &ptr_lines);                                // splits the lines string by newlines
-    while (line != NULL) {                                                              // while there are lines
-        if (strncmp(line, "#define", 7) == 0) {                                         // if the line starts with #define
-            char* name = matrix_name(line);                                             // gets the name of the matrix
-            char* matrix_str = get_matrix_str(line);                                    // gets the matrix string
-            if (name == NULL || matrix_str == NULL) {                                   // if the name or matrix string is NULL
-                free(name);                                                             // frees memory
-                free(matrix_str);                                                       // frees memory
-                line = strtok_r(NULL, "\n", &ptr_lines);                                // gets the next line
-                continue;                                                               // continues to the next iteration
+    char** a_names= malloc(num_order * sizeof(char*));                                  // allocates memory for unique matrix names
+    matrix* mats = malloc(num_order * sizeof(matrix));                                  // array
+    int counter = 0;                                                               
+    char* lines_copy = strdup(lines);
+    char* ptr_lines = NULL;
+    char* line = strtok_r(lines_copy, "\n", &ptr_lines);
+    while (line != NULL) {
+        if (strncmp(line, "#define", 7) == 0) {
+            char* name = matrix_name(line);
+            char* matrix_str = get_matrix_str(line);
+            if (name == NULL || matrix_str == NULL) {
+                free(name);
+                free(matrix_str);
+                line = strtok_r(NULL, "\n", &ptr_lines);
+                continue;
             }
-            int index = -1;                                                             // index of the matrix in the order
-            for (int i = 0; i < num_order; i++) {                                       // iterates the order
-                if (strcmp(order[i], name) == 0) {                                      // if the name matches the order
-                    index = i;                                                          // sets the index
-                    break;                                                              // breaks the loop
+            int found_index = -1;
+            for (int i = 0; i < counter; i++) {
+                if (strcmp(a_names[i], name) == 0) {
+                    found_index = i;
+                    break;
                 }
             }
-            if (index == -1) {                                                          // if the index is not found
-                free(name);                                                             // frees memory
-                free(matrix_str);                                                       // frees memory
-                line = strtok_r(NULL, "\n", &ptr_lines);                                // gets the next line
-                continue;                                                               // continues to the next iteration
+            if (found_index == -1) {
+                int rows = num_rows(matrix_str);
+                matrix mat;
+                mat.n_rows = rows;
+                mat.rows = malloc(rows * sizeof(vector));
+                int r = 0;
+                char* ptr_row = NULL;
+                char* row_str = strtok_r(matrix_str, ")", &ptr_row);
+                while (row_str != NULL && r < rows) {
+                    int cols = num_columns(row_str);
+                    vector v = parse_row(row_str, cols);
+                    mat.rows[r++] = v;
+                    row_str = strtok_r(NULL, ")", &ptr_row);
+                }
+                a_names[counter] = strdup(name);
+                mats[counter] = mat;
+                counter++;
             }
-            int rows = num_rows(matrix_str);                                            // counts the number of rows in the matrix string
-            all_circ.cir[index].n_rows = rows;                                          // sets the number of rows in the matrix
-            all_circ.cir[index].rows = malloc(rows * sizeof(vector));                   // allocates memory for the rows in the matrix
-            int r = 0;                                                                  // row index
-            char* ptr_row = NULL;                                                       // pointer for strtok_r
-            char* row_str = strtok_r(matrix_str, ")", &ptr_row);                        // splits the matrix string by )
-            while (row_str != NULL && r < rows) {                                       // while there are rows and row index is less than the number of rows
-                int cols = num_columns(row_str);                                        // counts the number of columns in the row
-                vector v = parse_row(row_str, cols);                                    // parses the row string into a vector
-                all_circ.cir[index].rows[r++] = v;                                      // adds the vector to the matrix rows
-                row_str = strtok_r(NULL, ")", &ptr_row);                                // gets the next row string
-            }
-            free(name);                                                                 // frees memory
-            free(matrix_str);                                                           // frees memory
+            free(name);
+            free(matrix_str);
         }
-        line = strtok_r(NULL, "\n", &ptr_lines);                                        // gets the next line
+        line = strtok_r(NULL, "\n", &ptr_lines);
     }
-    free(lines_copy);                                                                   // frees memory
+    free(lines_copy);
+    all_circ.cir = malloc(num_order * sizeof(matrix));
+    all_circ.n = num_order;
+    for (int i = 0; i < num_order; i++) {
+        int idx = -1;
+        for (int j = 0; j < counter; j++) {
+            if (strcmp(order[i], a_names[j]) == 0) {
+                idx = j;
+                break;
+            }
+        }
+        if (idx == -1) {
+            fprintf(stderr, "Matrix %s not found in definitions!\n", order[i]);
+            all_circ.cir[i].n_rows = 0;
+            all_circ.cir[i].rows = NULL;
+            continue;
+        }
+        matrix* src = &mats[idx];
+        int rows = src->n_rows;
+        all_circ.cir[i].n_rows = rows;
+        all_circ.cir[i].rows = malloc(rows * sizeof(vector));
+        for (int r = 0; r < rows; r++) {
+            int len = src->rows[r].length; 
+            vector v;
+            v.length = len;
+            v.values = malloc(len * sizeof(complex));
+            for (int c = 0; c < len; c++) {
+                v.values[c] = src->rows[r].values[c];
+            }
+            all_circ.cir[i].rows[r] = v;                                                // assigns v
+        }
+    }
+    for (int i = 0; i < counter; i++) {                                                 // frees memory for unique matrices
+        free(a_names[i]);                                                               // frees memory for a_names
+        for (int r = 0; r < mats[i].n_rows; r++) {                                      // iterates rows
+            free(mats[i].rows[r].values);                                               // frees memory for values
+        }
+        free(mats[i].rows);                                                             // frees memory for rows
+    }
+    free(a_names);
+    free(mats);                                                                         // frees memory for unique_mats
     return all_circ;                                                                    // returns the circuit
 }
 
