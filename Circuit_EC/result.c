@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 complex c_multiply(complex c1, complex c2) {                                                // multiplies complexes
     complex result;                                                                         // output
@@ -32,7 +33,12 @@ void m_mult(matrix m1, matrix m2, matrix *res, int qubits) {                    
             res -> rows[i].values[j] = c;                                                   // assigns the complex
         }
     }
+}
 
+void* thread_mult(void* arg) {                                                              // thread function for matrix multiplication
+    threads_data* data = (threads_data*)arg;                                                // casts the argument to threads_data
+    m_mult(*data->a, *data->b, data->result, data->qubits);                                  // multiplies the matrices
+    return NULL;                                                                            // returns NULL
 }
 
 void copy_vector(vector* out, vector in, int qubits) {                                      // copies the vector
@@ -49,13 +55,11 @@ void copy_matrix(matrix* out, matrix in, int qubits) {                          
     }
 }
 
-matrix allocate_matrix(int len) {                                                           // allocates memory for a matrix
-    matrix m;                                                                               // initializes matrix
-    m.rows = malloc(len * sizeof(vector));                                                  // allocates memory for rows
+void allocate_matrix(matrix* m, int len) {                                                           // allocates memory for a matrix
+    m -> rows = malloc(len * sizeof(vector));                                                  // allocates memory for rows
     for (int i = 0; i < len; i++) {                                                         // iterates rows
-        m.rows[i].values = malloc(len * sizeof(complex));                                   // allocates memory for values
-    }
-    return m;                                                                               // returns the matrix
+        m -> rows[i].values = malloc(len * sizeof(complex));                                   // allocates memory for values
+    }                                                                           
 }
 
 void free_matrix(matrix m, int len) {                                                       // frees memory for a matrix
@@ -65,21 +69,62 @@ void free_matrix(matrix m, int len) {                                           
     free(m.rows);                                                                           // frees memory for rows
 }
 
-matrix get_product(circuit all_circ, int qubits, char** order) {                            // multiplies all matrices
+matrix get_product(circuit all_circ, int qubits, char** order, int threads) {               // multiplies all matrices
     int num_order = 0;                                                                      // number of matrices in the order
     while (order[num_order] != NULL) {                                                      // iterates the order
         num_order++;                                                                        // increases the number of matrices
     }
-    int len = (int)pow(2, qubits);                                                          // number of rows or columns
-    matrix temp = allocate_matrix(len);                                                     // allocates memory for the matrix
-    matrix result = allocate_matrix(len);                                                   // allocates memory for the result matrix
-    copy_matrix(&temp, all_circ.cir[0], qubits);                                            // copies the first matrix to temp
-    for (int i = 1; i < num_order; i++) {                                                   // iterates the order
-        m_mult(temp, all_circ.cir[i], &result, qubits);                                     // multiplies the matrices
-        copy_matrix(&temp, result, qubits);                                                 // copies the result to temp
+    int real = 0;
+    if (threads > num_order / 2) {
+        real = num_order / 2;                                                            // if the number of threads is greater than the number of matrices divided by 2
     }
-    free_matrix(result, len);                                                               // frees memory for the result matrix
-    return temp;                                                                            // returns the product
+    else {
+        real = threads;                                                     
+    }
+    pthread_t thread_ids[real];                                                            // array of thread ids
+    // A B C D E F G matrici e 2 thread
+        // (AB)= H (CD) = I (EF) = J G
+        // (HI) = K (JG) = L
+        // (KL) = RESULT
+    int dim = num_order;
+    while (dim > 1) {
+        int disp = dim / 2;
+        int reach = 0;
+        threads_data* data = malloc(disp * sizeof(threads_data));                           // allocates memory for the threads data
+        for (int c = 0; c+1 < dim; c += 2) {
+            printf("2");
+            data[reach].a = &all_circ.cir[c];
+            data[reach].b = &all_circ.cir[c+1];   
+            data[reach].result = malloc(sizeof(matrix));                                                // sets the number of qubits
+            data[reach].qubits = qubits; 
+            allocate_matrix(data[reach].result, (int)pow(2, qubits));         // allocates memory for the result matrix
+            pthread_create(&thread_ids[reach], NULL, thread_mult, &data[reach]);                // creates the thread
+            reach++;
+        }
+        for (int i = 0; i < reach; i++) {                                                   // waits for the threads to finish
+            printf("3");
+            pthread_join(thread_ids[i], NULL);                                              // joins the thread
+            all_circ.cir[i] = *data[i].result;
+        }        
+        reach = 0;
+        if (dim % 2 == 1) {
+            all_circ.cir[reach] = all_circ.cir[dim - 1];
+            dim = dim / 2 + 1;
+        }
+        else {
+            dim = dim / 2;
+        }
+        matrix *temp = realloc(all_circ.cir, dim*sizeof(matrix));
+        if (temp != NULL) {                                                                 // reallocates memory for the circuit matrices
+            all_circ.cir = temp;                                                            // assigns the new circuit matrices
+        }
+        else {
+            fprintf(stderr, "Memory allocation failed\n");                                  // error
+            exit(EXIT_FAILURE);                                                             // exits the program
+        }
+        
+    }
+    return all_circ.cir[0];                                                                 // returns the product of the matrices
 }
 
 double get_module(complex c) {                                                              // gets the module squared of a complex
@@ -98,14 +143,16 @@ vector get_vout(matrix product, vector vin, int qubits, vector vout) {          
     return vout;                                                                            // return output vector
 }
 
-int norm_control(vector vout) {                                                             // controls the norm of the output vector
+double norm_control(vector vout) {                                                             // controls the norm of the output vector
     double norm = 0.0;                                                                      // initializes norm
     for (int i = 0; i < vout.length; i++) {                                                 // iterates the output vector
         norm += get_module(vout.values[i]);                                                 // gets the module squared
     }
+    /*
     double tollerance = 1e-3;                                                               // tolerance for the norm
     if (norm > 1 + tollerance || norm < 1 - tollerance) {                                   // if the norm is not equal to 1
         return 0;                                                                           // error
     }
-    return 1;                                                                               // the norm is valid
+    */
+    return norm;                                                                               // the norm is valid
 }

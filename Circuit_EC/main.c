@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <pthread.h>
 
 int main() {
     // reads the init file
@@ -86,7 +87,7 @@ int main() {
     }
     
     // gets the matrices' product
-    matrix product = get_product(all_circ, qubits, order);
+    matrix product = get_product(all_circ, qubits, order, threads);
 
     // gets the output vector
     vector vout;
@@ -95,9 +96,8 @@ int main() {
     vout = get_vout(product, vin, qubits, vout);
 
     // checks the norm of the output vector
-    if (!norm_control(vout)) {
-        fprintf(stderr, "The vector's norm is not valid\n");
-    }
+    double norm = norm_control(vout);
+    printf("The output vector's norm is: %lf\n", norm);
     printf("The output vector is:\n[(");
     for (int i = 0; i < len; i++) {
         if (vout.values[i].imag < 0)
@@ -114,9 +114,6 @@ int main() {
     free(vout.values);
     free(vin.values);
     free_matrix(product, len);
-    for (int i = 0; i < num_order; i++) {
-        free_matrix(all_circ.cir[i], len);
-    }
     free(all_circ.cir);
 
     return 0;
