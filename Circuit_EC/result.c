@@ -82,30 +82,26 @@ matrix get_product(circuit all_circ, int qubits, char** order, int threads) {   
         real = threads;                                                     
     }
     pthread_t thread_ids[real];                                                            // array of thread ids
-    // A B C D E F G matrici e 2 thread
-        // (AB)= H (CD) = I (EF) = J G
-        // (HI) = K (JG) = L
-        // (KL) = RESULT
     int dim = num_order;
     while (dim > 1) {
         int disp = dim / 2;
         int reach = 0;
         threads_data* data = malloc(disp * sizeof(threads_data));                           // allocates memory for the threads data
-        for (int c = 0; c+1 < dim; c += 2) {
-            printf("2");
-            data[reach].a = &all_circ.cir[c];
-            data[reach].b = &all_circ.cir[c+1];   
-            data[reach].result = malloc(sizeof(matrix));                                                // sets the number of qubits
-            data[reach].qubits = qubits; 
-            allocate_matrix(data[reach].result, (int)pow(2, qubits));         // allocates memory for the result matrix
-            pthread_create(&thread_ids[reach], NULL, thread_mult, &data[reach]);                // creates the thread
-            reach++;
-        }
-        for (int i = 0; i < reach; i++) {                                                   // waits for the threads to finish
-            printf("3");
-            pthread_join(thread_ids[i], NULL);                                              // joins the thread
-            all_circ.cir[i] = *data[i].result;
-        }        
+        while (reach < disp) {
+            for (int c = 0; c+1 < dim; c += 2) {
+                data[reach].a = &all_circ.cir[c];
+                data[reach].b = &all_circ.cir[c+1];   
+                data[reach].result = malloc(sizeof(matrix));                                       // sets the number of qubits
+                data[reach].qubits = qubits; 
+                allocate_matrix(data[reach].result, (int)pow(2, qubits));                       // allocates memory for the result matrix
+                pthread_create(&thread_ids[reach], NULL, thread_mult, &data[reach]);                // creates the thread
+                reach++;
+            }
+            for (int i = 0; i < reach; i++) {                                                   // waits for the threads to finish
+                pthread_join(thread_ids[i], NULL);                                              // joins the thread
+                all_circ.cir[i] = *data[i].result;
+            } 
+        }       
         reach = 0;
         if (dim % 2 == 1) {
             all_circ.cir[reach] = all_circ.cir[dim - 1];
@@ -121,8 +117,7 @@ matrix get_product(circuit all_circ, int qubits, char** order, int threads) {   
         else {
             fprintf(stderr, "Memory allocation failed\n");                                  // error
             exit(EXIT_FAILURE);                                                             // exits the program
-        }
-        
+        }        
     }
     return all_circ.cir[0];                                                                 // returns the product of the matrices
 }
