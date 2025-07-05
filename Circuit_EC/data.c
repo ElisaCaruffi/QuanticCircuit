@@ -114,14 +114,14 @@ complex get_complex(char* parse) {
     int j = 0;                                                                      // index of the imaginary part
     int iter = 0;                                                                   // iterator for the string
     char *copy = strdup(parse);                                                     // copies the string
+    printf("Parsing complex number: %s\n", copy);                                  // prints the complex number being parsed
     int count = 0;                                                                  // counter of values
-    char *p;                                                                        // pointer
-    char *token = strtok_r(parse, "+-", &p);                                        // splits the string
+    char *token = strtok(parse, "+-");                                              // splits the string
     char *tokens[100];                                                              // array of tokens
     while (token != NULL) {                                                         // while there are tokens
         tokens[count] = token;                                                      // adds token to the array
         count++;                                                                    // increases count  
-        token = strtok_r(NULL, "+-", &p);                                           // gets the next token
+        token = strtok(NULL, "+-");                                                 // gets the next token
     }
     if (count == 2) {                                                               // if there are two tokens
         int length = 0;                                                             // length of the real part
@@ -174,6 +174,9 @@ complex get_complex(char* parse) {
                         j++;                                                        // increases index
                     }
                     temp2[j] = '\0';                                                // adds null terminator
+                    char* t;
+                    t = strdup(temp2);
+                    printf("Imaginary part: %s\n", t);                          // prints the real and imaginary parts
                     c.imag = strtod(temp2, NULL);                                   // converts string to double
                     free(temp1);                                                    // frees memory
                     free(temp2);                                                    // frees memory
@@ -292,9 +295,8 @@ vector get_vin(char* lines, int qubits, vector vin) {                           
                 free(str);                                                              // frees memory for the string
                 exit(EXIT_FAILURE);                                                     // exits the program
             }
-            int count = 0;                                                              // counter of values 
-            char *p;                                                                    // pointer 
-            char *token = strtok_r(str, ",", &p);                                       // splits the string 
+            int count = 0;                                                              // counter of values                                              
+            char *token = strtok(str, ",");                                             // splits the string 
             while (token != NULL && count < (int)pow(2, qubits)) {                      // while there are tokens 
                 tokens[count] = malloc(strlen(token) + 1);                              // allocates memory for the token    
                 if (!tokens[count]) {                                                   // checks if memory allocation was successful
@@ -308,7 +310,7 @@ vector get_vin(char* lines, int qubits, vector vin) {                           
                 }
                 strcpy(tokens[count], token);                                           // copies the token to the array
                 count++;                                                                // increases count
-                token = strtok_r(NULL, ",", &p);                                        // gets the next token
+                token = strtok(NULL, ",");                                              // gets the next token
             }
             if (count != (int)pow(2, qubits)) {                                         // if values is not equal to 2^qubits 
                 fprintf(stderr, "Input vector not valid");                              // error 
@@ -355,14 +357,13 @@ void get_order(char* lines, char** order) {                                     
             int len = end - start;                                                      // length of the string
             char str[1024];                                                             // array
             strncpy(str, &l[start], len);                                               // copies the string
-            str[len] = '\0';                                                            // adds null terminator
-            char *p;                                                                    // pointer 
+            str[len] = '\0';                                                            // adds null terminator                       
             int i = 0;
-            char *token = strtok_r(str, " \t", &p);                                     // splits the string 
+            char *token = strtok(str, " \t");                                           // splits the string 
             while (token != NULL) {                                                     // while there are tokens 
                 order[i] = strdup(token);                                               // adds token to the arder
                 i++;                                                                    // increases index
-                token = strtok_r(NULL, " \t", &p);                                      // gets the next token 
+                token = strtok(NULL, " \t");                                            // gets the next token 
             }
             order[i] = NULL;  
             break; 
@@ -430,11 +431,10 @@ int num_rows(char* matrix_str) {                                                
 int num_columns(char* row) {                                                            // counts the number of columns in a row
     int count = 0;                                                                      // counter for the number of columns
     char* temp = strdup(row);                                                           // creates a copy of the row string
-    char* saveptr = NULL;                                                               // pointer for strtok_r
-    char* token = strtok_r(temp, ",", &saveptr);                                        // splits the row string by commas
+    char* token = strtok(temp, ",");                                                    // splits the row string by commas
     while (token != NULL) {                                                             // while there are tokens
         count++;                                                                        // increases the counter
-        token = strtok_r(NULL, ",", &saveptr);                                          // gets the next token
+        token = strtok(NULL, ",");                                                      // gets the next token
     }
     free(temp);                                                                         // frees the temporary string
     return count;                                                                       // returns the number of columns
@@ -446,18 +446,24 @@ vector parse_row(char* row_str, int cols) {                                     
     v.values = malloc(cols * sizeof(complex));                                          // allocates memory for the values
     while (*row_str == ' ' || *row_str == '\t' || *row_str == '(') {                    // skips spaces, tabs, and (
         row_str++;                                                                      // moves to the next character
+    }                        
+    char** little_c = malloc(cols * sizeof(char*));                                 // allocates memory for the row values                                   
+    char* token = strtok(row_str, ",");                                     // splits the row string by commas
+    int little_counter = 0;
+    while (token != NULL) {                                          // while there are tokens
+        little_c[little_counter] = malloc(strlen(token) + 1);                     // allocates memory for the row value
+        strcpy(little_c[little_counter], token);                                                            // assigns the first token to the array
+        token = strtok(NULL, ",");                                                      // gets the next token
+        little_counter++;
     }
-    char* saveptr = NULL;                                                               // pointer for strtok_r
-    char* token = strtok_r(row_str, ",", &saveptr);                                     // splits the row string by commas
     int index = 0;                                                                      // index for the vector values
-    while (token != NULL && index < cols) {                                             // while there are tokens and index is less than the columns
-        while (*token == ' ' || *token == '\t') {                                       // skips spaces and tabs
-            token++;                                                                    // moves to the next character
-        }
-        v.values[index] = get_complex(token);                                           // gets the complex number from the token
-        index++;                                                                        // increases the index
-        token = strtok_r(NULL, ",", &saveptr);                                          // gets the next token
+    for (index = 0; index<cols; index++) {                                             // while there are tokens and index is less than the columns
+        v.values[index] = get_complex(little_c[index]);                                           // gets the complex number from the token
     }
+    for (int i = 0; i < cols; i++) {                                           // frees memory for the row values
+        free(little_c[i]);                                                              // frees memory for the row value
+    }
+    free(little_c);                                                                    // frees memory for the array of row values
     return v;                                                                           // returns the vector
 }
 
@@ -470,16 +476,28 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
     matrix* mats = malloc(num_order * sizeof(matrix));                                  // array
     int counter = 0;                                                                    // counter for the number of matrices
     char* lines_copy = strdup(lines);                                                   // creates a copy of the lines
-    char* ptr = NULL;                                                                   // pointer for strtok_r
-    char* line = strtok_r(lines_copy, "\n", &ptr);                                      // splits the lines by newlines
+    int height = 0;
+    for (int h = 0; h < strlen(lines_copy); h++) {
+        if (lines_copy[h] == '#') {
+            height++;                                                                   // counts the number of lines starting with #
+        }
+    }
+    char** all = malloc(height*sizeof(char*));                                    // allocates memory for all the lines
+    char* line = strtok(lines_copy, "\n");                                      // splits the lines by newlines
+    int dx = 0;
     while (line != NULL) {                                                              // while there are lines
-        if (strncmp(line, "#define", 7) == 0) {                                         // if the line starts with #define
-            char* name = matrix_name(line);                                             // gets the name of the matrix
-            char* m_str = get_matrix_str(line);                                         // gets the matrix string
+        all[dx] = malloc(strlen(line)+1);                                                    // adds the line to the array
+        strcpy(all[dx], line);                                                          // copies the line to the array
+        dx++;                                                                      // increases the counter
+        line = strtok(NULL, "\n");                                              // gets the next line
+    }
+    for (int b = 0; b<height; b++) {                                                              // while there are lines
+        if (strncmp(all[b], "#define", 7) == 0) {                                         // if the line starts with #define
+            char* name = matrix_name(all[b]);                                             // gets the name of the matrix
+            char* m_str = get_matrix_str(all[b]);                                         // gets the matrix string
             if (name == NULL || m_str == NULL) {                                        // if name or matrix_str is NULL
                 free(name);                                                             // frees memory for name 
                 free(m_str);                                                            // frees memory for matrix_str
-                line = strtok_r(NULL, "\n", &ptr);                                      // gets the next line
                 continue;                                                               // continues to the next iteration
             }
             int j = -1;                                                                 // index of the matrix in the matrices
@@ -495,23 +513,47 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
                 mat.n_rows = rows;                                                      // sets the number of rows
                 mat.rows = malloc(rows * sizeof(vector));                               // allocates memory for the rows
                 int r = 0;                                                              // row index
-                char* ptr_row = NULL;                                                   // pointer for strtok_r
-                char* row_str = strtok_r(m_str, ")", &ptr_row);                         // splits the matrix string by )
+                char** rr = malloc(rows * sizeof(char*));                                 // array of row strings
+                char* row_str = strtok(m_str, ")");                         // splits the matrix string by )
                 while (row_str != NULL && r < rows) {                                   // while there are rows and r is less than the number of rows
-                    int cols = num_columns(row_str);                                    // gets the number of columns in the row
-                    vector v = parse_row(row_str, cols);                                // parses the row string into a vector
-                    mat.rows[r++] = v;                                                  // assigns the vector to the matrix row
-                    row_str = strtok_r(NULL, ")", &ptr_row);                            // gets the next row string
+                    rr[r] = malloc(strlen(row_str) + 1);                        // allocates memory for the row string
+                    strcpy(rr[r], row_str);                                             // copies the row string
+                    row_str = strtok(NULL, ")");                            // gets the next row string
+                    r++;
+                }
+                for (int l = 0; l<rows; l++) {
+                    int cols = num_columns(rr[l]);                                    // gets the number of columns in the row
+                    vector v = parse_row(rr[l], cols);                                // parses the row string into a vector
+                    /*
+                    for (int i = 0; i < (int)pow(2, qubits); i++) {
+                        if (v.values[i].imag < 0)
+                            printf("%0.5lf - i%0.5lf", v.values[i].real, -v.values[i].imag);
+                        else
+                            printf("%0.5lf + i%0.5lf", v.values[i].real, v.values[i].imag);
+
+                        if (i != (int)pow(2, qubits) - 1)
+                            printf(", ");
+                    }
+                    printf("\n");
+                    */
+                    mat.rows[l] = v;                                                  // assigns the vector to the matrix row
                 }
                 a_names[counter] = strdup(name);                                        // adds the name to the matrix names
                 mats[counter] = mat;                                                    // assigns the matrix
                 counter++;                                                              // increments the counter
+                for (int w = 0; w<rows;w++) {
+                    free(rr[w]);                                                      // frees memory for the row strings
+                }          
+                free(rr);                                                           // frees memory for the array of row strings
             }
             free(name);                                                                 // frees memory for name
-            free(m_str);                                                                // frees memory for matrix_str
+            free(m_str);                                                      // frees memory for matrix_str
         }
-        line = strtok_r(NULL, "\n", &ptr);                                              // gets the next line
     }
+    for (int z =0; z<height; z++) {
+            free(all[z]);
+        }
+        free(all);
     free(lines_copy);                                                                   // frees memory for the lines copy
     all_circ.cir = malloc(num_order * sizeof(matrix));                                  // allocates memory for the circuit matrices
     all_circ.n = num_order;                                                             // sets the number of matrices in the circuit
