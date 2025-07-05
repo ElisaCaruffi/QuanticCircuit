@@ -19,19 +19,11 @@ int main() {
     // gets the number of qubits
     int qubits = get_qubits(lines);
     int len = (int)pow(2, qubits);
-    printf("The qubits' number is: %i\n", qubits);
 
     // gets the input vector
     vector vin;
     vin.values = malloc(len * sizeof(complex));
     vin = get_vin(lines, qubits, vin);
-    printf("The input vector is:\n");
-    for (int i = 0; i < vin.length; i++) {
-        if (vin.values[i].imag < 0)
-            printf("%lf - %lfi\n", vin.values[i].real, -vin.values[i].imag);
-        else
-            printf("%lf + %lfi\n", vin.values[i].real, vin.values[i].imag);
-    }
     free(lines);
 
     // reads the circ file
@@ -52,16 +44,12 @@ int main() {
     // inverts the order
     int num_order = 0;
     while (order[num_order] != NULL) num_order++;
-    for (int i = 0; i < num_order / 2; i++) {
+    int i = 0;
+    for (i = 0; i < num_order / 2; i++) {
         char* temp = order[i];
         order[i] = order[num_order - 1 - i];
         order[num_order - 1 - i] = temp;
     }
-    printf("The multiplication order: ");
-    for (int i = 0; i < num_order; i++) {
-        printf("%s ", order[i]);
-    }
-    printf("\n");
 
     // gets the circuit
     circuit all_circ;
@@ -99,7 +87,8 @@ int main() {
     double norm = norm_control(vout);
     printf("The output vector's norm is: %lf\n", norm);
     printf("The output vector is:\n[(");
-    for (int i = 0; i < len; i++) {
+    int i = 0;
+    for (i = 0; i < len; i++) {
         if (vout.values[i].imag < 0)
             printf("%0.5lf - i%0.5lf", vout.values[i].real, -vout.values[i].imag);
         else

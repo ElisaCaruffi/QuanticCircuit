@@ -4,7 +4,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
-#include <stdbool.h>
 
 char* read_file(char filename[]) {                                                      // reads the file
     FILE *file = fopen(filename, "r");                                                  // opens file
@@ -32,7 +31,7 @@ char* read_file(char filename[]) {                                              
     }
     int i = 0;                                                                          // index of the file content
     int j = 0;                                                                          // index of the lines
-    bool new = true;                                                                    // flag to check if the line is new
+    int new = 1;                                                                        // flag to check if the line is new
     while (temp[i] != '\0') {                                                           // while the file content doesn't end
         if (new && strncmp(&temp[i], "#circ", 5) == 0) {                                // if the line starts with #circ
             if (j > 0 && lines[j - 1] != '\n') {                                        // if the previous character isn't a newline
@@ -49,7 +48,7 @@ char* read_file(char filename[]) {                                              
                 i++;                                                                    // increases index 
                 j++;                                                                    // increases index
             }
-            new = true;                                                                 // sets new to true
+            new = 1;                                                                    // sets new to true
             continue;                                                                   // continues to the next iteration
         }
         if (temp[i] == ' ' || temp[i] == '\t' || temp[i] == '\n') {                     // if the character is a space, tab or newline
@@ -59,7 +58,7 @@ char* read_file(char filename[]) {                                              
             i++;                                                                        // moves to the next character
             continue;                                                                   // continues to the next iteration
         }
-        new = false;                                                                    // sets new to false
+        new = 0;                                                                        // sets new to false
         if (temp[i] == '#' && j != 0) {                                                 // if the character is # and the index isn't 0
             lines[j] = '\n';                                                            // adds newline character
             j++;                                                                        // increases index
@@ -87,7 +86,8 @@ int get_qubits(char* lines) {                                                   
         int len = end - start;                                                          // length of the string
         strncpy(str, &lines[start], len);                                               // copies the string
         str[len] = '\0';                                                                // adds null terminator
-        for (int i = 0; i < len; i++) {                                                 // iterates the string
+        int i = 0;
+        for (i = 0; i < len; i++) {                                                     // iterates the string
             if (isdigit(str[i]) == 0) {                                                 // if a character is not a digit
                 fprintf(stderr, "File format not valid\n");                             // error
                 return -1;                                                              // returns -1
@@ -126,7 +126,8 @@ complex get_complex(char* parse) {
     if (count == 2) {                                                               // if there are two tokens
         int length = 0;                                                             // length of the real part
         int check = 0;                                                              // checks if there are letters
-        for (int a = 0; a < strlen(tokens[0]); a++) {                               // iterates the first token
+        int a = 0;
+        for (a = 0; a < strlen(tokens[0]); a++) {                                   // iterates the first token
             if (isalpha(tokens[0][a])) {                                            // if the character is a letter
                 check = 1;                                                          // sets check to 1
             } 
@@ -143,7 +144,8 @@ complex get_complex(char* parse) {
                 i++;                                                                // increases index
                 iter++;                                                             // increases iter
             } 
-            for (int t1 = 0; t1 < strlen(tokens[0]); t1++) {                        // iterates the first token
+            int t1 = 0;
+            for (t1 = 0; t1 < strlen(tokens[0]); t1++) {                            // iterates the first token
                 temp1[i] = tokens[0][t1];                                           // adds character to the temporary array
                 i++;                                                                // increases index
                 length++;                                                           // increases length
@@ -155,7 +157,8 @@ complex get_complex(char* parse) {
             j++;                                                                    // increases index
             if (strchr(tokens[1], 'i') != NULL) {                                   // if the second token contains i
                 int len = 0;                                                        // length of the imaginary part
-                for (int c = 0; c < strlen(tokens[1]); c++) {                       // iterates the second token
+                int c1 = 0;
+                for (c1 = 0; c1 < strlen(tokens[1]); c1++) {                        // iterates the second token
                     len++;                                                          // increases length
                 }
                 if (len == 1 && tokens[1][0] == 'i') {                              // if the imaginary part is just i
@@ -166,7 +169,8 @@ complex get_complex(char* parse) {
                     return c;                                                       // returns complex number
                 }
                 else {                                                              // else
-                    for (int t2 = 0; t2 < strlen(tokens[1]); t2++) {                // iterates the second token
+                    int t2 = 0;
+                    for (t2 = 0; t2 < strlen(tokens[1]); t2++) {                    // iterates the second token
                         if (tokens[1][t2] == 'i') {                                 // if the character is i
                             continue;                                               // skips i
                         }
@@ -191,7 +195,8 @@ complex get_complex(char* parse) {
     else if (count == 1) {                                                          // if there is only one token
         char *t = tokens[0];                                                        // assigns the first token to t
         int try =  0;                                                               // checks if the first character is a letter
-        for (int b = 0; b < strlen(t); b++) {                                       // iterates the first token
+        int b = 0;
+        for (b = 0; b < strlen(t); b++) {                                           // iterates the first token
             if (isalpha(t[b])) {                                                    // if there are letters
                 try = 1;                                                            // sets try to 1
             }
@@ -201,7 +206,8 @@ complex get_complex(char* parse) {
                 temp1[0] = copy[0];                                                 // adds the first character to the temporary array
                 i++;                                                                // increases index 
             }
-            for (int t1 = 0; t1 < strlen(t); t1++) {                                // iterates the string
+            int t1 = 0;
+            for (t1 = 0; t1 < strlen(t); t1++) {                                    // iterates the string
                 temp1[i] = t[t1];                                                   // adds character to the temporary array
                 i++;                                                                // increases index
             }
@@ -219,7 +225,8 @@ complex get_complex(char* parse) {
                     j++;                                                            // increases index  
                 }
                 int len = 0;                                                        // length of the imaginary part
-                for (int c = 0; c < strlen(t); c++) {                               // iterates the string   
+                int c2 = 0;
+                for (c2 = 0; c2 < strlen(t); c2++) {                                // iterates the string   
                     len++;                                                          // increases length
                 }
                 if (len == 1 && t[0] == 'i') {                                      // if the imaginary part is just i
@@ -230,7 +237,8 @@ complex get_complex(char* parse) {
                     return c;                                                       // returns complex number
                 }
                 else {                                                              // else
-                    for (int t2 = 0; t2 < strlen(t); t2++) {                        // iterates the string
+                    int t2 = 0;                                                     // index of the string
+                    for (t2 = 0; t2 < strlen(t); t2++) {                            // iterates the string
                         if (t[t2] == 'i') {                                         // if the character is i
                             continue;                                               // skips i
                         }
@@ -299,7 +307,8 @@ vector get_vin(char* lines, int qubits, vector vin) {                           
                 tokens[count] = malloc(strlen(token) + 1);                              // allocates memory for the token    
                 if (!tokens[count]) {                                                   // checks if memory allocation was successful
                     fprintf(stderr, "malloc failed for token\n");                       // error
-                    for (int k = 0; k < count; k++) {                                   // frees memory for the tokens   
+                    int k = 0;
+                    for (k = 0; k < count; k++) {                                       // frees memory for the tokens   
                         free(tokens[k]);                                                // frees memory for the tokens  
                     }
                     free(tokens);                                                       // frees memory for the tokens
@@ -312,7 +321,8 @@ vector get_vin(char* lines, int qubits, vector vin) {                           
             }
             if (count != (int)pow(2, qubits)) {                                         // if values is not equal to 2^qubits 
                 fprintf(stderr, "Input vector not valid");                              // error 
-                for (int i = 0; i < count; i++) {                                       // frees memory for the tokens
+                int i = 0;                                                              // index of the tokens
+                for (i = 0; i < count; i++) {                                           // frees memory for the tokens
                     free(tokens[i]);                                                    // frees memory for the tokens
                 }
                 free(tokens);                                                           // frees memory for the tokens
@@ -320,10 +330,11 @@ vector get_vin(char* lines, int qubits, vector vin) {                           
                 exit(EXIT_FAILURE);                                                     // exits the program
             }
             vin.length = count;                                                         // sets the length of the input vector
-            for (int i = 0; i < count; i++) {                                           // iterates the tokens
-                complex value = get_complex(tokens[i]);                                 // gets the complex number from the token
+            int z = 0;
+            for (z = 0; z < count; z++) {                                               // iterates the tokens
+                complex value = get_complex(tokens[z]);                                 // gets the complex number from the token
                 vin.values[index++] = value;                                            // adds the complex number to the input vector
-                free(tokens[i]);                                                        // frees memory for the token
+                free(tokens[z]);                                                        // frees memory for the token
             } 
             free(tokens);                                                               // frees memory for the tokens
             free(str);                                                                  // frees memory for the string
@@ -387,7 +398,8 @@ char* matrix_name(char *line) {                                                 
     }
     int len = i - start;                                                                // length of the string
     char* name = malloc(len + 1);                                                       // allocates memory for the name
-    for (int j = 0; j < len; j++) {                                                     // iterates the string
+    int j = 0;
+    for (j = 0; j < len; j++) {                                                         // iterates the string
         name[j] = line[start + j];                                                      // adds character to the name
     }
     name[len] = '\0';                                                                   // adds null terminator
@@ -397,7 +409,8 @@ char* matrix_name(char *line) {                                                 
 char* get_matrix_str(char* line) {                                                      // gets the matrix string
     char* start = NULL;                                                                 // pointer to the start of the matrix string
     char* end = NULL;                                                                   // pointer to the end of the matrix string
-    for (int i = 0; line[i] != '\0'; i++) {                                             // iterates the line
+    int i = 0;
+    for (i = 0; line[i] != '\0'; i++) {                                                 // iterates the line
         if (line[i] == '[' && start == NULL) {                                          // if the character is [ and start is NULL
             start = &line[i + 1];                                                       // sets start to the next character
         }
@@ -410,8 +423,9 @@ char* get_matrix_str(char* line) {                                              
     }
     int len = end - start;                                                              // length of the matrix string
     char* out = malloc(len + 1);                                                        // allocates memory for the output string
-    for (int i = 0; i < len; i++) {                                                     // iterates the string
-        out[i] = start[i];                                                              // adds character to the output string
+    int j = 0;
+    for (j = 0; j < len; j++) {                                                         // iterates the string
+        out[j] = start[j];                                                              // adds character to the output string
     }
     out[len] = '\0';                                                                    // adds null terminator
     return out;                                                                         // returns the output string
@@ -419,7 +433,8 @@ char* get_matrix_str(char* line) {                                              
 
 int num_rows(char* matrix_str) {                                                        // counts the number of rows in the matrix string
     int count = 0;                                                                      // counter for the number of rows
-    for (int i = 0; matrix_str[i] != '\0'; i++) {                                       // iterates the matrix string
+    int i = 0;
+    for (i = 0; matrix_str[i] != '\0'; i++) {                                       // iterates the matrix string
         if (matrix_str[i] == '(') {                                                     // if the character is (
             count++;                                                                    // increases the counter
         }
@@ -483,7 +498,8 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
                 continue;                                                               // continues to the next iteration
             }
             int j = -1;                                                                 // index of the matrix in the matrices
-            for (int i = 0; i < counter; i++) {                                         // iterates through the matrices
+            int i = 0;
+            for (i = 0; i < counter; i++) {                                             // iterates through the matrices
                 if (strcmp(a_names[i], name) == 0) {                                    // if the name matches
                     j = i;                                                              // sets the index
                     break;                                                              // breaks the loop
@@ -515,9 +531,11 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
     free(lines_copy);                                                                   // frees memory for the lines copy
     all_circ.cir = malloc(num_order * sizeof(matrix));                                  // allocates memory for the circuit matrices
     all_circ.n = num_order;                                                             // sets the number of matrices in the circuit
-    for (int i = 0; i < num_order; i++) {                                               // iterates through the order
+    int i = 0;
+    for (i = 0; i < num_order; i++) {                                                   // iterates through the order
         int k = -1;                                                                     // index of the matrix
-        for (int j = 0; j < counter; j++) {                                             // iterates through the matrices
+        int j = 0;
+        for (j = 0; j < counter; j++) {                                                 // iterates through the matrices
             if (strcmp(order[i], a_names[j]) == 0) {                                    // if the name matches
                 k = j;                                                                  // sets the index
                 break;                                                                  // breaks the loop
@@ -533,18 +551,21 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
         int rows = imp->n_rows;                                                         // gets the number of rows
         all_circ.cir[i].n_rows = rows;                                                  // sets the number of rows in the circuit matrix   
         all_circ.cir[i].rows = malloc(rows * sizeof(vector));                           // allocates memory for the rows in the circuit matrix
-        for (int r = 0; r < rows; r++) {                                                // iterates through the rows
+        int r = 0;
+        for (r = 0; r < rows; r++) {                                                    // iterates through the rows
             int len = imp -> rows[r].length;                                            // gets the length of the row
             vector v;                                                                   // initializes a vector
             v.length = len;                                                             // sets the length of the vector
             v.values = malloc(len * sizeof(complex));                                   // allocates memory for the values in the vector
-            for (int c = 0; c < len; c++) {                                             // iterates through the columns
-                v.values[c] = imp -> rows[r].values[c];                                 // assigns the value to the vector
+            int c1 = 0;
+            for (c1 = 0; c1 < len; c1++) {                                              // iterates through the columns
+                v.values[c1] = imp -> rows[r].values[c1];                               // assigns the value to the vector
             }
             all_circ.cir[i].rows[r] = v;                                                // assigns v
         }
     }
-    for (int i = 0; i < counter; i++) {                                                 // frees memory for matrices
+    int i = 0;
+    for (i = 0; i < counter; i++) {                                                     // frees memory for matrices
         free(a_names[i]);                                                               // frees memory for a_names
         for (int r = 0; r < mats[i].n_rows; r++) {                                      // iterates rows
             free(mats[i].rows[r].values);                                               // frees memory for values
@@ -554,24 +575,4 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
     free(a_names);
     free(mats);                                                                         // frees memory for mats
     return all_circ;                                                                    // returns the circuit
-}
-
-void print_c(circuit all_circ, char** order, int qubits) {                              // print all the matrices
-    int num_order = 0;
-    while (order[num_order] != NULL) {
-        num_order++;
-    }
-    for (int i = 0; i < num_order; i++) {
-        for (int j = 0; j < (int)pow(2, qubits); j++) {
-            for (int k = 0; k < (int)pow(2, qubits); k++) {
-                if (all_circ.cir[i].rows[j].values[k].imag < 0) {                      
-                    printf("%lf - %lfi ", all_circ.cir[i].rows[j].values[k].real, -all_circ.cir[i].rows[j].values[k].imag); 
-                } else {                                                                
-                    printf("%lf + %lfi ", all_circ.cir[i].rows[j].values[k].real, all_circ.cir[i].rows[j].values[k].imag); 
-                }
-            }
-            printf("\n");                                                              
-        }
-        printf("\n");   
-    }
 }

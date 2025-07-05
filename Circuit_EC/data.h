@@ -32,6 +32,5 @@ int num_rows(char* matrix_str);
 int num_columns(char* row);
 vector parse_row(char* row_str, int cols);
 circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, matrix m, vector row);
-void print_c(circuit all_circ, char** order, int qubits);
 
 #endif
