@@ -4,7 +4,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
-#include <stdbool.h>
 
 char* read_file(char filename[]) {                                                      /*reads the file*/
     FILE *file = fopen(filename, "r");                                                  /*opens file*/
@@ -32,9 +31,9 @@ char* read_file(char filename[]) {                                              
     }
     int i = 0;                                                                          /*index of the file content*/
     int j = 0;                                                                          /*index of the lines*/
-    bool new = true;                                                                    /*flag to check if the line is new*/
+    int new = 1;                                                                        /*flag to check if the line is new*/
     while (temp[i] != '\0') {                                                           /*while the file content doesn't end*/
-        if (new && strncmp(&temp[i], "#circ", 5) == 0) {                                /*if the line starts with #circ*/
+        if (new==1 && strncmp(&temp[i], "#circ", 5) == 0) {                             /*if the line starts with #circ*/
             if (j > 0 && lines[j - 1] != '\n') {                                        /*if the previous character isn't a newline*/
                 lines[j] = '\n';                                                        /*adds newline character*/
                 j++;                                                                    /*increases index*/
@@ -49,7 +48,7 @@ char* read_file(char filename[]) {                                              
                 i++;                                                                    /*increases index */
                 j++;                                                                    /*increases index*/
             }
-            new = true;                                                                 /*sets new to true*/
+            new = 1;                                                                    /*sets new to true*/
             continue;                                                                   /*continues to the next iteration*/
         }
         if (temp[i] == ' ' || temp[i] == '\t' || temp[i] == '\n') {                     /*if the character is a space, tab or newline*/
@@ -59,7 +58,7 @@ char* read_file(char filename[]) {                                              
             i++;                                                                        /*moves to the next character*/
             continue;                                                                   /*continues to the next iteration*/
         }
-        new = false;                                                                    /*sets new to false*/
+        new = 0;                                                                        /*sets new to false*/
         if (temp[i] == '#' && j != 0) {                                                 /*if the character is # and the index isn't 0*/
             lines[j] = '\n';                                                            /*adds newline character*/
             j++;                                                                        /*increases index*/
@@ -337,7 +336,7 @@ vector get_vin(char* lines, int qubits, vector vin) {                           
     return vin;                                                                         /*returns the input vector */
 }
 
-void get_order(char* lines, char** order) {                                              /*gets the order of the circuit*/
+void get_order(char* lines, char** order) {                                             /*gets the order of the circuit*/
     int index = 0;                                                                      /*index of the lines*/
     while (lines[index] != '\0') {                                                      /*while the lines doesn't end*/
         char *l = &lines[index];                                                        /*pointer to the current line*/
@@ -443,23 +442,23 @@ vector parse_row(char* row_str, int cols) {                                     
     while (*row_str == ' ' || *row_str == '\t' || *row_str == '(') {                    /*skips spaces, tabs, and (*/
         row_str++;                                                                      /*moves to the next character*/
     }                        
-    char** little_c = malloc(cols * sizeof(char*));                                 /*allocates memory for the row values                                   */
-    char* token = strtok(row_str, ",");                                     /*splits the row string by commas*/
+    char** little_c = malloc(cols * sizeof(char*));                                     /*allocates memory for the row values                                   */
+    char* token = strtok(row_str, ",");                                                 /*splits the row string by commas*/
     int little_counter = 0;
-    while (token != NULL) {                                          /*while there are tokens*/
-        little_c[little_counter] = malloc(strlen(token) + 1);                     /*allocates memory for the row value*/
-        strcpy(little_c[little_counter], token);                                                            /*assigns the first token to the array*/
+    while (token != NULL) {                                                             /*while there are tokens*/
+        little_c[little_counter] = malloc(strlen(token) + 1);                           /*allocates memory for the row value*/
+        strcpy(little_c[little_counter], token);                                        /*assigns the first token to the array*/
         token = strtok(NULL, ",");                                                      /*gets the next token*/
         little_counter++;
     }
     int index = 0;                                                                      /*index for the vector values*/
-    for (index = 0; index<cols; index++) {                                             /*while there are tokens and index is less than the columns*/
-        v.values[index] = get_complex(little_c[index]);                                           /*gets the complex number from the token*/
+    for (index = 0; index<cols; index++) {                                              /*while there are tokens and index is less than the columns*/
+        v.values[index] = get_complex(little_c[index]);                                 /*gets the complex number from the token*/
     }
-    for (int i = 0; i < cols; i++) {                                           /*frees memory for the row values*/
+    for (int i = 0; i < cols; i++) {                                                    /*frees memory for the row values*/
         free(little_c[i]);                                                              /*frees memory for the row value*/
     }
-    free(little_c);                                                                    /*frees memory for the array of row values*/
+    free(little_c);                                                                     /*frees memory for the array of row values*/
     return v;                                                                           /*returns the vector*/
 }
 
@@ -473,24 +472,25 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
     int counter = 0;                                                                    /*counter for the number of matrices*/
     char* lines_copy = strdup(lines);                                                   /*creates a copy of the lines*/
     int height = 0;
-    for (int h = 0; h < strlen(lines_copy); h++) {
+    int len = strlen(lines_copy);                                                       /*length of the lines copy*/
+    for (int h = 0; h < len; h++) {
         if (lines_copy[h] == '#') {
             height++;                                                                   /*counts the number of lines starting with #*/
         }
     }
-    char** all = malloc(height*sizeof(char*));                                    /*allocates memory for all the lines*/
-    char* line = strtok(lines_copy, "\n");                                      /*splits the lines by newlines*/
+    char** all = malloc(height*sizeof(char*));                                          /*allocates memory for all the lines*/
+    char* line = strtok(lines_copy, "\n");                                              /*splits the lines by newlines*/
     int dx = 0;
     while (line != NULL) {                                                              /*while there are lines*/
-        all[dx] = malloc(strlen(line)+1);                                                    /*adds the line to the array*/
+        all[dx] = malloc(strlen(line)+1);                                               /*adds the line to the array*/
         strcpy(all[dx], line);                                                          /*copies the line to the array*/
-        dx++;                                                                      /*increases the counter*/
-        line = strtok(NULL, "\n");                                              /*gets the next line*/
+        dx++;                                                                           /*increases the counter*/
+        line = strtok(NULL, "\n");                                                      /*gets the next line*/
     }
-    for (int b = 0; b<height; b++) {                                                              /*while there are lines*/
-        if (strncmp(all[b], "#define", 7) == 0) {                                         /*if the line starts with #define*/
-            char* name = matrix_name(all[b]);                                             /*gets the name of the matrix*/
-            char* m_str = get_matrix_str(all[b]);                                         /*gets the matrix string*/
+    for (int b = 0; b<height; b++) {                                                    /*while there are lines*/
+        if (strncmp(all[b], "#define", 7) == 0) {                                       /*if the line starts with #define*/
+            char* name = matrix_name(all[b]);                                           /*gets the name of the matrix*/
+            char* m_str = get_matrix_str(all[b]);                                       /*gets the matrix string*/
             if (name == NULL || m_str == NULL) {                                        /*if name or matrix_str is NULL*/
                 free(name);                                                             /*frees memory for name */
                 free(m_str);                                                            /*frees memory for matrix_str*/
@@ -509,35 +509,35 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
                 mat.n_rows = rows;                                                      /*sets the number of rows*/
                 mat.rows = malloc(rows * sizeof(vector));                               /*allocates memory for the rows*/
                 int r = 0;                                                              /*row index*/
-                char** rr = malloc(rows * sizeof(char*));                                 /*array of row strings*/
-                char* row_str = strtok(m_str, ")");                         /*splits the matrix string by )*/
+                char** rr = malloc(rows * sizeof(char*));                               /*array of row strings*/
+                char* row_str = strtok(m_str, ")");                                     /*splits the matrix string by )*/
                 while (row_str != NULL && r < rows) {                                   /*while there are rows and r is less than the number of rows*/
-                    rr[r] = malloc(strlen(row_str) + 1);                        /*allocates memory for the row string*/
+                    rr[r] = malloc(strlen(row_str) + 1);                                /*allocates memory for the row string*/
                     strcpy(rr[r], row_str);                                             /*copies the row string*/
-                    row_str = strtok(NULL, ")");                            /*gets the next row string*/
+                    row_str = strtok(NULL, ")");                                        /*gets the next row string*/
                     r++;
                 }
                 for (int l = 0; l<rows; l++) {
-                    int cols = num_columns(rr[l]);                                    /*gets the number of columns in the row*/
-                    vector v = parse_row(rr[l], cols);                                /*parses the row string into a vector*/
-                    mat.rows[l] = v;                                                  /*assigns the vector to the matrix row*/
+                    int cols = num_columns(rr[l]);                                      /*gets the number of columns in the row*/
+                    vector v = parse_row(rr[l], cols);                                  /*parses the row string into a vector*/
+                    mat.rows[l] = v;                                                    /*assigns the vector to the matrix row*/
                 }
                 a_names[counter] = strdup(name);                                        /*adds the name to the matrix names*/
                 mats[counter] = mat;                                                    /*assigns the matrix*/
                 counter++;                                                              /*increments the counter*/
                 for (int w = 0; w<rows;w++) {
-                    free(rr[w]);                                                      /*frees memory for the row strings*/
+                    free(rr[w]);                                                        /*frees memory for the row strings*/
                 }          
-                free(rr);                                                           /*frees memory for the array of row strings*/
+                free(rr);                                                               /*frees memory for the array of row strings*/
             }
             free(name);                                                                 /*frees memory for name*/
-            free(m_str);                                                      /*frees memory for matrix_str*/
+            free(m_str);                                                                /*frees memory for matrix_str*/
         }
     }
     for (int z =0; z<height; z++) {
-            free(all[z]);
-        }
-        free(all);
+        free(all[z]);
+    }
+    free(all);
     free(lines_copy);                                                                   /*frees memory for the lines copy*/
     all_circ.cir = malloc(num_order * sizeof(matrix));                                  /*allocates memory for the circuit matrices*/
     all_circ.n = num_order;                                                             /*sets the number of matrices in the circuit*/
