@@ -43,8 +43,11 @@ int main() {
 
     // inverts the order
     int num_order = 0;
-    while (order[num_order] != NULL) num_order++;
-    for (int i = 0; i < num_order / 2; i++) {
+    while (order[num_order] != NULL) {
+        num_order++;
+    }
+    int i = 0;
+    for (i = 0; i < num_order / 2; i++) {
         char* temp = order[i];
         order[i] = order[num_order - 1 - i];
         order[num_order - 1 - i] = temp;
@@ -86,13 +89,14 @@ int main() {
     double norm = norm_control(vout);
     printf("The output vector's norm is: %lf\n", norm);
     printf("The output vector is:\n[(");
-    for (int i = 0; i < len; i++) {
-        if (vout.values[i].imag < 0)
-            printf("%0.5lf - i%0.5lf", vout.values[i].real, -vout.values[i].imag);
+    int j = 0;
+    for (j = 0; j < len; j++) {
+        if (vout.values[j].imag < 0)
+            printf("%0.5lf - i%0.5lf", vout.values[j].real, -vout.values[j].imag);
         else
-            printf("%0.5lf + i%0.5lf", vout.values[i].real, vout.values[i].imag);
+            printf("%0.5lf + i%0.5lf", vout.values[j].real, vout.values[j].imag);
 
-        if (i != len - 1)
+        if (j != len - 1)
             printf(", ");
     }
     printf(")]\n");

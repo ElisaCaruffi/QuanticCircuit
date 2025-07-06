@@ -7,20 +7,6 @@
 #include <math.h>
 #include <pthread.h>
 
-void print_matrix(matrix m, int qubits) {
-    int len = (int)pow(2, qubits);                                                          /* number of rows or columns*/
-    for (int i = 0; i < m.n_rows; i++) {                                                    /* iterates rows*/
-        for (int j = 0; j < len; j++) {                                                     /* iterates columns*/
-            if (m.rows[i].values[j].imag < 0) {                                             /* if the imaginary part is negative*/
-                printf("%lf - %lfi ", m.rows[i].values[j].real, -m.rows[i].values[j].imag); /* prints the complex number*/
-            } else {                                                                        /* if the imaginary part is positive*/
-                printf("%lf + %lfi ", m.rows[i].values[j].real, m.rows[i].values[j].imag);  /* prints the complex number*/
-            }
-        }
-        printf("\n");                                                                       /* new line after each row*/
-    }
-}
-
 complex c_multiply(complex c1, complex c2) {                                                /* multiplies complexes*/
     complex result;                                                                         /* output*/
     result.real = c1.real * c2.real - c1.imag * c2.imag;                                    /* real part*/
@@ -37,10 +23,13 @@ complex c_sum(complex c1, complex c2) {                                         
 
 void m_mult(matrix m1, matrix m2, matrix *res, int qubits) {                                /* multiplies two matrices*/
     int len = (int)pow(2, qubits);                                                          /* number of columns or rows*/
-    for (int i = 0; i < len; i++) {                                                         /* iterates rows*/
-        for (int j = 0; j < len; j++) {                                                     /* iterates columns*/
+    int i = 0;                                                                              /* initializes i for rows*/
+    for (i = 0; i < len; i++) {                                                             /* iterates rows*/
+        int j = 0;                                                                          /* initializes j for columns*/
+        for (j = 0; j < len; j++) {                                                         /* iterates columns*/
             complex c = {0.0, 0.0};                                                         /* initializes complex*/
-            for (int k = 0; k < len; k++) {                                                 /* iterates both*/
+            int k = 0;                                                                      /* initializes k for the sum*/
+            for (k = 0; k < len; k++) {                                                     /* iterates both*/
                 c = c_sum(c, c_multiply(m1.rows[i].values[k], m2.rows[k].values[j]));       /* gets the complex*/
             }
             res -> rows[i].values[j] = c;                                                   /* assigns the complex*/
@@ -56,13 +45,15 @@ void* thread_mult(void* arg) {                                                  
 
 void allocate_matrix(matrix* m, int len) {                                                  /* allocates memory for a matrix*/
     m -> rows = malloc(len * sizeof(vector));                                               /* allocates memory for rows*/
-    for (int i = 0; i < len; i++) {                                                         /* iterates rows*/
+    int i = 0;                                                                              /* initializes i for rows*/
+    for (i = 0; i < len; i++) {                                                             /* iterates rows*/
         m -> rows[i].values = malloc(len * sizeof(complex));                                /* allocates memory for values*/
     }                                                                           
 }
 
 void free_matrix(matrix m, int len) {                                                       /* frees memory for a matrix*/
-    for (int i = 0; i < len; i++) {                                                         /* iterates rows*/
+    int i = 0;                                                                              /* initializes i for rows*/
+    for (i = 0; i < len; i++) {                                                             /* iterates rows*/
         free(m.rows[i].values);                                                             /* frees memory for values*/
     }   
     free(m.rows);                                                                           /* frees memory for rows*/
@@ -90,7 +81,8 @@ matrix get_product(circuit all_circ, int qubits, char** order, int threads) {   
         int index = 0;                                                                      /* index for the result matrices*/
         threads_data* data = malloc(disp * sizeof(threads_data));                           /* allocates memory for the threads data*/
         while (reach < disp) {                                                              /* while the reach is less than the number of threads*/
-            for (int c = 0; c < real; c++) {                                                /* iterates the threads*/
+            int c = 0;                                                                      /* initializes c for the threads*/
+            for (c = 0; c < real; c++) {                                                    /* iterates the threads*/
                 if (reach >= disp) {                                                        /* if the reach is greater than the number of threads*/
                     break;                                                                  /* breaks the loop if the number of threads is reached*/
                 }
@@ -104,7 +96,8 @@ matrix get_product(circuit all_circ, int qubits, char** order, int threads) {   
                 used++;                                                                     /* increases the used threads*/
                 counter += 2;                                                               /* increases the counter  */
             }
-            for (int k = 0; k < used; k++) {                                                /* waits for the threads to finish*/
+            int k = 0;                                                                      /* initializes k for the threads*/
+            for (k = 0; k < used; k++) {                                                    /* waits for the threads to finish*/
                 pthread_join(thread_ids[k], NULL);                                          /* waits for the thread to finish*/
                 all_circ.cir[index] = *data[index].result;                                  /* assigns the result matrix to the circuit */
                 index++;                                                                    /* increases the index*/
@@ -139,9 +132,11 @@ double get_module(complex c) {                                                  
 
 vector get_vout(matrix product, vector vin, int qubits, vector vout) {                      /* multiplicates the product for the input vector*/
     int len = (int)pow(2, qubits);                                                          /* number of rows or columns*/
-    for (int i = 0; i < len; i++) {                                                         /* iterates rows*/
+    int i = 0;                                                                              /* initializes i for rows*/
+    for (i = 0; i < len; i++) {                                                             /* iterates rows*/
         complex c = {0.0, 0.0};                                                             /* initializes complex*/
-        for (int j = 0; j < len; j++) {                                                     /* iterates columns*/
+        int j = 0;                                                                          /* initializes j for columns*/
+        for (j = 0; j < len; j++) {                                                         /* iterates columns*/
             c = c_sum(c, c_multiply(product.rows[i].values[j], vin.values[j]));             /* get the complex*/
         }
         vout.values[i] = c;                                                                 /* assigns the complex*/
@@ -151,11 +146,12 @@ vector get_vout(matrix product, vector vin, int qubits, vector vout) {          
 
 double norm_control(vector vout) {                                                          /* controls the norm of the output vector*/
     double norm = 0.0;                                                                      /* initializes norm*/
-    for (int i = 0; i < vout.length; i++) {                                                 /* iterates the output vector*/
+    int i = 0;                                                                              /* initializes i for the output vector*/
+    for (i = 0; i < vout.length; i++) {                                                     /* iterates the output vector*/
         norm += get_module(vout.values[i]);                                                 /* gets the module squared*/
     }
     /*
-    double tollerance = 1e-3;                                                               
+    double tollerance = 1e-6;                                                               
     if (norm > 1 + tollerance || norm < 1 - tollerance) {                                   
         return 0;                                                                           
     }   

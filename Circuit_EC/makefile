@@ -1,4 +1,4 @@
-COMP = gcc -Wall
+COMP = gcc -std=c90 -Wall
 LDFLAGS = -lm
 
 SRCS = main.c data.c result.c

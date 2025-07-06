@@ -70,35 +70,55 @@ char* read_file(char filename[]) {                                              
     lines[j] = '\0';                                                                    /*adds null terminator*/
     fclose(file);                                                                       /*closes the file*/
     free(temp);                                                                         /*frees memory*/
-
     return lines;                                                                       /*returns the lines*/
 }
 
-int get_qubits(char* lines) {                                                           /*gets the number of qubits*/
-    if (strncmp(lines, "#qubits", 7) == 0) {                                            /*if the line starts with #qubits*/
-        int start = 7;                                                                  /*starts from the 8th character*/
-
-        int end = start + 1;                                                            /*starts from the next character*/
-        while (lines[end] != '\n') {                                                    /*skips spaces and tabs*/
-            end++;                                                                      /*moves to the next character*/
-        }
-        char str[100];                                                                  /*array*/
-        int len = end - start;                                                          /*length of the string*/
-        strncpy(str, &lines[start], len);                                               /*copies the string*/
-        str[len] = '\0';                                                                /*adds null terminator*/
-        for (int i = 0; i < len; i++) {                                                 /*iterates the string*/
-            if (isdigit(str[i]) == 0) {                                                 /*if a character is not a digit*/
-                fprintf(stderr, "File format not valid\n");                             /*error*/
-                return -1;                                                              /*returns -1*/
-            }
-        }
-        int qubits = (int)strtol(str, NULL, 10);                                        /*converts string to integer   */
-        return qubits;                                                                  /*returns the number of qubits*/
+char* my_strdup(const char* s) {
+    if (!s) {
+        return NULL;
     }
-    else {                                                                              /*if the line doesn't start with #qubits*/
-        fprintf(stderr, "File format not valid\n");                                     /*error*/
-        return -1;                                                                      /*returns -1 if the line doesn't start with #qubits*/
-    };                                                                                   
+    size_t len = strlen(s)+1;                                                           /*gets the length of the string*/
+    char* dup = malloc(len);
+    if (dup) {
+        memcpy(dup, s, len);                                                            /*copies the string*/
+    }
+    return dup;
+}
+
+int get_qubits(char* lines) {                                                           /*gets the number of qubits*/
+    char* lines_copy = my_strdup(lines);                 
+    if (!lines_copy) {
+        fprintf(stderr, "Memory allocation failed\n");
+        return -1;
+    }
+    char* line = strtok(lines_copy, "\n");            
+    while (line != NULL) {
+        if (strncmp(line, "#qubits", 7) == 0) {
+            int start = 7;
+            while (line[start] == ' ' || line[start] == '\t') {
+                start++;
+            }
+            char str[100];
+            int i = 0;
+            while (isdigit(line[start + i])) {
+                str[i] = line[start + i];
+                i++;
+            }
+            str[i] = '\0';
+            if (i == 0) {
+                fprintf(stderr, "File format not valid\n");
+                free(lines_copy);
+                return -1;
+            }
+            int qubits = (int)strtol(str, NULL, 10);
+            free(lines_copy);
+            return qubits;
+        }
+        line = strtok(NULL, "\n");
+    }
+    fprintf(stderr, "File format not valid\n");     
+    free(lines_copy);
+    return -1;                                                                                
 }
 
 complex get_complex(char* parse) {
@@ -112,7 +132,7 @@ complex get_complex(char* parse) {
     int i = 0;                                                                      /*index of the real part*/
     int j = 0;                                                                      /*index of the imaginary part*/
     int iter = 0;                                                                   /*iterator for the string*/
-    char *copy = strdup(parse);                                                     /*copies the string*/
+    char *copy = my_strdup(parse);                                                  /*copies the string*/
     int count = 0;                                                                  /*counter of values*/
     char *token = strtok(parse, "+-");                                              /*splits the string*/
     char *tokens[100];                                                              /*array of tokens*/
@@ -124,7 +144,8 @@ complex get_complex(char* parse) {
     if (count == 2) {                                                               /*if there are two tokens*/
         int length = 0;                                                             /*length of the real part*/
         int check = 0;                                                              /*checks if there are letters*/
-        for (int a = 0; a < strlen(tokens[0]); a++) {                               /*iterates the first token*/
+        int a = 0;                                                                  /*index of the first token*/
+        for (a = 0; a < strlen(tokens[0]); a++) {                                   /*iterates the first token*/
             if (isalpha(tokens[0][a])) {                                            /*if the character is a letter*/
                 check = 1;                                                          /*sets check to 1*/
             } 
@@ -141,8 +162,9 @@ complex get_complex(char* parse) {
                 i++;                                                                /*increases index*/
                 iter++;                                                             /*increases iter*/
             } 
-            for (int t1 = 0; t1 < strlen(tokens[0]); t1++) {                        /*iterates the first token*/
-                temp1[i] = tokens[0][t1];                                           /*adds character to the temporary array*/
+            int t4 = 0;
+            for (t4 = 0; t4 < strlen(tokens[0]); t4++) {                            /*iterates the first token*/
+                temp1[i] = tokens[0][t4];                                           /*adds character to the temporary array*/
                 i++;                                                                /*increases index*/
                 length++;                                                           /*increases length*/
             }
@@ -153,7 +175,8 @@ complex get_complex(char* parse) {
             j++;                                                                    /*increases index*/
             if (strchr(tokens[1], 'i') != NULL) {                                   /*if the second token contains i*/
                 int len = 0;                                                        /*length of the imaginary part*/
-                for (int c = 0; c < strlen(tokens[1]); c++) {                       /*iterates the second token*/
+                int c1 = 0;
+                for (c1 = 0; c1 < strlen(tokens[1]); c1++) {                        /*iterates the second token*/
                     len++;                                                          /*increases length*/
                 }
                 if (len == 1 && tokens[1][0] == 'i') {                              /*if the imaginary part is just i*/
@@ -164,11 +187,12 @@ complex get_complex(char* parse) {
                     return c;                                                       /*returns complex number*/
                 }
                 else {                                                              /*else*/
-                    for (int t2 = 0; t2 < strlen(tokens[1]); t2++) {                /*iterates the second token*/
-                        if (tokens[1][t2] == 'i') {                                 /*if the character is i*/
+                    int t3 = 0;                                                     /* initializes t2*/
+                    for (t3 = 0; t3 < strlen(tokens[1]); t3++) {                    /*iterates the second token*/
+                        if (tokens[1][t3] == 'i') {                                 /*if the character is i*/
                             continue;                                               /*skips i*/
                         }
-                        temp2[j] = tokens[1][t2];                                   /*adds character to the temporary array*/
+                        temp2[j] = tokens[1][t3];                                   /*adds character to the temporary array*/
                         j++;                                                        /*increases index*/
                     }
                     temp2[j] = '\0';                                                /*adds null terminator*/
@@ -189,7 +213,8 @@ complex get_complex(char* parse) {
     else if (count == 1) {                                                          /*if there is only one token*/
         char *t = tokens[0];                                                        /*assigns the first token to t*/
         int try =  0;                                                               /*checks if the first character is a letter*/
-        for (int b = 0; b < strlen(t); b++) {                                       /*iterates the first token*/
+        int b = 0;                                                                  /* initializes b */
+        for (b = 0; b < strlen(t); b++) {                                           /*iterates the first token*/
             if (isalpha(t[b])) {                                                    /*if there are letters*/
                 try = 1;                                                            /*sets try to 1*/
             }
@@ -199,7 +224,8 @@ complex get_complex(char* parse) {
                 temp1[0] = copy[0];                                                 /*adds the first character to the temporary array*/
                 i++;                                                                /*increases index */
             }
-            for (int t1 = 0; t1 < strlen(t); t1++) {                                /*iterates the string*/
+            int t1 = 0;                                                             /* initializes t1*/
+            for (t1 = 0; t1 < strlen(t); t1++) {                                    /*iterates the string*/
                 temp1[i] = t[t1];                                                   /*adds character to the temporary array*/
                 i++;                                                                /*increases index*/
             }
@@ -217,7 +243,8 @@ complex get_complex(char* parse) {
                     j++;                                                            /*increases index  */
                 }
                 int len = 0;                                                        /*length of the imaginary part*/
-                for (int c = 0; c < strlen(t); c++) {                               /*iterates the string   */
+                int c2 = 0;                                                         /* initializes c2*/
+                for (c2 = 0; c2 < strlen(t); c2++) {                                /*iterates the string   */
                     len++;                                                          /*increases length*/
                 }
                 if (len == 1 && t[0] == 'i') {                                      /*if the imaginary part is just i*/
@@ -228,7 +255,8 @@ complex get_complex(char* parse) {
                     return c;                                                       /*returns complex number*/
                 }
                 else {                                                              /*else*/
-                    for (int t2 = 0; t2 < strlen(t); t2++) {                        /*iterates the string*/
+                    int t2 = 0;
+                    for (t2 = 0; t2 < strlen(t); t2++) {                            /*iterates the string*/
                         if (t[t2] == 'i') {                                         /*if the character is i*/
                             continue;                                               /*skips i*/
                         }
@@ -296,7 +324,8 @@ vector get_vin(char* lines, int qubits, vector vin) {                           
                 tokens[count] = malloc(strlen(token) + 1);                              /*allocates memory for the token    */
                 if (!tokens[count]) {                                                   /*checks if memory allocation was successful*/
                     fprintf(stderr, "malloc failed for token\n");                       /*error*/
-                    for (int k = 0; k < count; k++) {                                   /*frees memory for the tokens   */
+                    int k = 0;                                                          /* initializes k*/
+                    for (k = 0; k < count; k++) {                                       /*frees memory for the tokens   */
                         free(tokens[k]);                                                /*frees memory for the tokens  */
                     }
                     free(tokens);                                                       /*frees memory for the tokens*/
@@ -309,15 +338,17 @@ vector get_vin(char* lines, int qubits, vector vin) {                           
             }
             if (count != (int)pow(2, qubits)) {                                         /*if values is not equal to 2^qubits */
                 fprintf(stderr, "Input vector not valid");                              /*error */
-                for (int i = 0; i < count; i++) {                                       /*frees memory for the tokens*/
-                    free(tokens[i]);                                                    /*frees memory for the tokens*/
+                int t = 0;
+                for (t = 0; t < count; t++) {                                           /*frees memory for the tokens*/
+                    free(tokens[t]);                                                    /*frees memory for the tokens*/
                 }
                 free(tokens);                                                           /*frees memory for the tokens*/
                 free(str);                                                              /*frees memory for the string*/
                 exit(EXIT_FAILURE);                                                     /*exits the program*/
             }
             vin.length = count;                                                         /*sets the length of the input vector*/
-            for (int i = 0; i < count; i++) {                                           /*iterates the tokens*/
+            int i = 0;
+            for (i = 0; i < count; i++) {                                               /*iterates the tokens*/
                 complex value = get_complex(tokens[i]);                                 /*gets the complex number from the token*/
                 vin.values[index++] = value;                                            /*adds the complex number to the input vector*/
                 free(tokens[i]);                                                        /*frees memory for the token*/
@@ -356,7 +387,7 @@ void get_order(char* lines, char** order) {                                     
             int i = 0;
             char *token = strtok(str, " \t");                                           /*splits the string */
             while (token != NULL) {                                                     /*while there are tokens */
-                order[i] = strdup(token);                                               /*adds token to the arder*/
+                order[i] = my_strdup(token);                                            /*adds token to the arder*/
                 i++;                                                                    /*increases index*/
                 token = strtok(NULL, " \t");                                            /*gets the next token */
             }
@@ -383,7 +414,8 @@ char* matrix_name(char *line) {                                                 
     }
     int len = i - start;                                                                /*length of the string*/
     char* name = malloc(len + 1);                                                       /*allocates memory for the name*/
-    for (int j = 0; j < len; j++) {                                                     /*iterates the string*/
+    int j = 0;
+    for (j = 0; j < len; j++) {                                                         /*iterates the string*/
         name[j] = line[start + j];                                                      /*adds character to the name*/
     }
     name[len] = '\0';                                                                   /*adds null terminator*/
@@ -393,7 +425,8 @@ char* matrix_name(char *line) {                                                 
 char* get_matrix_str(char* line) {                                                      /*gets the matrix string*/
     char* start = NULL;                                                                 /*pointer to the start of the matrix string*/
     char* end = NULL;                                                                   /*pointer to the end of the matrix string*/
-    for (int i = 0; line[i] != '\0'; i++) {                                             /*iterates the line*/
+    int i = 0;
+    for (i = 0; line[i] != '\0'; i++) {                                                 /*iterates the line*/
         if (line[i] == '[' && start == NULL) {                                          /*if the character is [ and start is NULL*/
             start = &line[i + 1];                                                       /*sets start to the next character*/
         }
@@ -406,8 +439,9 @@ char* get_matrix_str(char* line) {                                              
     }
     int len = end - start;                                                              /*length of the matrix string*/
     char* out = malloc(len + 1);                                                        /*allocates memory for the output string*/
-    for (int i = 0; i < len; i++) {                                                     /*iterates the string*/
-        out[i] = start[i];                                                              /*adds character to the output string*/
+    int m = 0;
+    for (m = 0; m < len; m++) {                                                         /*iterates the string*/
+        out[m] = start[m];                                                              /*adds character to the output string*/
     }
     out[len] = '\0';                                                                    /*adds null terminator*/
     return out;                                                                         /*returns the output string*/
@@ -415,7 +449,8 @@ char* get_matrix_str(char* line) {                                              
 
 int num_rows(char* matrix_str) {                                                        /*counts the number of rows in the matrix string*/
     int count = 0;                                                                      /*counter for the number of rows*/
-    for (int i = 0; matrix_str[i] != '\0'; i++) {                                       /*iterates the matrix string*/
+    int i = 0;
+    for (i = 0; matrix_str[i] != '\0'; i++) {                                       /*iterates the matrix string*/
         if (matrix_str[i] == '(') {                                                     /*if the character is (*/
             count++;                                                                    /*increases the counter*/
         }
@@ -425,7 +460,7 @@ int num_rows(char* matrix_str) {                                                
 
 int num_columns(char* row) {                                                            /*counts the number of columns in a row*/
     int count = 0;                                                                      /*counter for the number of columns*/
-    char* temp = strdup(row);                                                           /*creates a copy of the row string*/
+    char* temp = my_strdup(row);                                                        /*creates a copy of the row string*/
     char* token = strtok(temp, ",");                                                    /*splits the row string by commas*/
     while (token != NULL) {                                                             /*while there are tokens*/
         count++;                                                                        /*increases the counter*/
@@ -455,7 +490,8 @@ vector parse_row(char* row_str, int cols) {                                     
     for (index = 0; index<cols; index++) {                                              /*while there are tokens and index is less than the columns*/
         v.values[index] = get_complex(little_c[index]);                                 /*gets the complex number from the token*/
     }
-    for (int i = 0; i < cols; i++) {                                                    /*frees memory for the row values*/
+    int i = 0;
+    for (i = 0; i < cols; i++) {                                                        /*frees memory for the row values*/
         free(little_c[i]);                                                              /*frees memory for the row value*/
     }
     free(little_c);                                                                     /*frees memory for the array of row values*/
@@ -470,10 +506,11 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
     char** a_names= malloc(num_order * sizeof(char*));                                  /*allocates memory for matrix names*/
     matrix* mats = malloc(num_order * sizeof(matrix));                                  /*array*/
     int counter = 0;                                                                    /*counter for the number of matrices*/
-    char* lines_copy = strdup(lines);                                                   /*creates a copy of the lines*/
+    char* lines_copy = my_strdup(lines);                                                /*creates a copy of the lines*/
     int height = 0;
     int len = strlen(lines_copy);                                                       /*length of the lines copy*/
-    for (int h = 0; h < len; h++) {
+    int h = 0;
+    for (h = 0; h < len; h++) {
         if (lines_copy[h] == '#') {
             height++;                                                                   /*counts the number of lines starting with #*/
         }
@@ -487,7 +524,11 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
         dx++;                                                                           /*increases the counter*/
         line = strtok(NULL, "\n");                                                      /*gets the next line*/
     }
-    for (int b = 0; b<height; b++) {                                                    /*while there are lines*/
+    int b = 0;
+    int p = 0;
+    int l = 0;
+    int w = 0;
+    for (b = 0; b<height; b++) {                                                        /*while there are lines*/
         if (strncmp(all[b], "#define", 7) == 0) {                                       /*if the line starts with #define*/
             char* name = matrix_name(all[b]);                                           /*gets the name of the matrix*/
             char* m_str = get_matrix_str(all[b]);                                       /*gets the matrix string*/
@@ -497,9 +538,9 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
                 continue;                                                               /*continues to the next iteration*/
             }
             int j = -1;                                                                 /*index of the matrix in the matrices*/
-            for (int i = 0; i < counter; i++) {                                         /*iterates through the matrices*/
-                if (strcmp(a_names[i], name) == 0) {                                    /*if the name matches*/
-                    j = i;                                                              /*sets the index*/
+            for (p = 0; p < counter; p++) {                                         /*iterates through the matrices*/
+                if (strcmp(a_names[p], name) == 0) {                                    /*if the name matches*/
+                    j = p;                                                              /*sets the index*/
                     break;                                                              /*breaks the loop*/
                 }
             }
@@ -517,15 +558,15 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
                     row_str = strtok(NULL, ")");                                        /*gets the next row string*/
                     r++;
                 }
-                for (int l = 0; l<rows; l++) {
+                for (l = 0; l<rows; l++) {
                     int cols = num_columns(rr[l]);                                      /*gets the number of columns in the row*/
                     vector v = parse_row(rr[l], cols);                                  /*parses the row string into a vector*/
                     mat.rows[l] = v;                                                    /*assigns the vector to the matrix row*/
                 }
-                a_names[counter] = strdup(name);                                        /*adds the name to the matrix names*/
+                a_names[counter] = my_strdup(name);                                        /*adds the name to the matrix names*/
                 mats[counter] = mat;                                                    /*assigns the matrix*/
                 counter++;                                                              /*increments the counter*/
-                for (int w = 0; w<rows;w++) {
+                for (w = 0; w<rows;w++) {
                     free(rr[w]);                                                        /*frees memory for the row strings*/
                 }          
                 free(rr);                                                               /*frees memory for the array of row strings*/
@@ -534,16 +575,21 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
             free(m_str);                                                                /*frees memory for matrix_str*/
         }
     }
-    for (int z =0; z<height; z++) {
+    int z = 0;
+    for (z = 0; z<height; z++) {
         free(all[z]);
     }
     free(all);
     free(lines_copy);                                                                   /*frees memory for the lines copy*/
     all_circ.cir = malloc(num_order * sizeof(matrix));                                  /*allocates memory for the circuit matrices*/
     all_circ.n = num_order;                                                             /*sets the number of matrices in the circuit*/
-    for (int i = 0; i < num_order; i++) {                                               /*iterates through the order*/
+    int i = 0;
+    int j = 0;
+    int y = 0;
+    int c = 0;
+    for (i = 0; i < num_order; i++) {                                                   /*iterates through the order*/
         int k = -1;                                                                     /*index of the matrix*/
-        for (int j = 0; j < counter; j++) {                                             /*iterates through the matrices*/
+        for (j = 0; j < counter; j++) {                                                 /*iterates through the matrices*/
             if (strcmp(order[i], a_names[j]) == 0) {                                    /*if the name matches*/
                 k = j;                                                                  /*sets the index*/
                 break;                                                                  /*breaks the loop*/
@@ -559,23 +605,25 @@ circuit get_matrices(char* lines, int qubits, char** order, circuit all_circ, ma
         int rows = imp->n_rows;                                                         /*gets the number of rows*/
         all_circ.cir[i].n_rows = rows;                                                  /*sets the number of rows in the circuit matrix   */
         all_circ.cir[i].rows = malloc(rows * sizeof(vector));                           /*allocates memory for the rows in the circuit matrix*/
-        for (int r = 0; r < rows; r++) {                                                /*iterates through the rows*/
-            int len = imp -> rows[r].length;                                            /*gets the length of the row*/
+        for (y = 0; y < rows; y++) {                                                    /*iterates through the rows*/
+            int len = imp -> rows[y].length;                                            /*gets the length of the row*/
             vector v;                                                                   /*initializes a vector*/
             v.length = len;                                                             /*sets the length of the vector*/
             v.values = malloc(len * sizeof(complex));                                   /*allocates memory for the values in the vector*/
-            for (int c = 0; c < len; c++) {                                             /*iterates through the columns*/
-                v.values[c] = imp -> rows[r].values[c];                                 /*assigns the value to the vector*/
+            for (c = 0; c < len; c++) {                                                 /*iterates through the columns*/
+                v.values[c] = imp -> rows[y].values[c];                                 /*assigns the value to the vector*/
             }
-            all_circ.cir[i].rows[r] = v;                                                /*assigns v*/
+            all_circ.cir[i].rows[y] = v;                                                /*assigns v*/
         }
     }
-    for (int i = 0; i < counter; i++) {                                                 /*frees memory for matrices*/
-        free(a_names[i]);                                                               /*frees memory for a_names*/
-        for (int r = 0; r < mats[i].n_rows; r++) {                                      /*iterates rows*/
-            free(mats[i].rows[r].values);                                               /*frees memory for values*/
+    int x = 0;
+    int e = 0;
+    for (x = 0; x < counter; x++) {                                                 /*frees memory for matrices*/
+        free(a_names[x]);                                                               /*frees memory for a_names*/
+        for (e = 0; e < mats[x].n_rows; e++) {                                      /*iterates rows*/
+            free(mats[x].rows[e].values);                                               /*frees memory for values*/
         }
-        free(mats[i].rows);                                                             /*frees memory for rows*/
+        free(mats[x].rows);                                                             /*frees memory for rows*/
     }
     free(a_names);
     free(mats);                                                                         /*frees memory for mats*/
